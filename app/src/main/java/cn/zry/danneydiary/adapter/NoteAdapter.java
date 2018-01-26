@@ -1,4 +1,4 @@
-package zry.cn.danneydiary.adapter;
+package cn.zry.danneydiary.adapter;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

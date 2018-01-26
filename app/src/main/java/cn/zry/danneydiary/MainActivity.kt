@@ -1,8 +1,7 @@
-package zry.cn.danneydiary
+package cn.zry.danneydiary
 
 import android.os.Bundle
 import android.support.design.widget.Snackbar
-import android.support.v7.widget.RecyclerView
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
@@ -11,7 +10,6 @@ import android.widget.SimpleAdapter
 import android.widget.Toast
 
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {

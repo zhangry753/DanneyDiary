@@ -1,4 +1,4 @@
-package zry.cn.danneydiary;
+package cn.zry.danneydiary;
 
 import android.content.Context;
 import android.content.res.TypedArray;
