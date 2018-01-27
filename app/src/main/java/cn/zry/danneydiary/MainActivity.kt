@@ -5,14 +5,20 @@ import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ListAdapter
 import android.widget.ListView
 import android.widget.SimpleAdapter
 import android.widget.Toast
 
 import kotlinx.android.synthetic.main.activity_main.*
+import kotterknife.bindView
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
+    private val noteRecyclerView:ListView by bindView(R.id.noteRecyclerView)
+    private val calendar:CustomCalendar by bindView(R.id.calendar)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +31,10 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, "点击了", Toast.LENGTH_SHORT).show()
                     }).show()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
         // 加载note
         val noteList = ArrayList<Map<String, Any>>()
         for (i in 0..10) {
@@ -34,22 +44,24 @@ class MainActivity : AppCompatActivity() {
                     "content" to "内容啊啊啊啊啊奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥多付所付所多")
             noteList.add(note)
         }
-        val noteRecyclerView = findViewById<ListView>(R.id.noteRecyclerView)
+
         val noteAdapter = SimpleAdapter(
                 this, noteList, R.layout.note_item,
                 arrayOf("img", "title", "content"),
                 intArrayOf(R.id.noteImg, R.id.noteTitle, R.id.noteContent)
         )
-        noteRecyclerView.adapter=noteAdapter
+        noteRecyclerView.adapter= noteAdapter as ListAdapter?
         // 日历内容 & 响应事件
-        val calendar = findViewById<CustomCalendar>(R.id.calendar)
         val dayEvalList = ArrayList<CustomCalendar.DayEvaluation>()
+        val nowCalendar = Calendar.getInstance()
+        val monthFormat = SimpleDateFormat("yyyy-MM")
+        nowCalendar.time = monthFormat.parse(monthFormat.format(Date()))
         for(i in 1..20){
-            val dayEval = CustomCalendar.DayEvaluation(i,3,1)
+            val dayEval = CustomCalendar.DayEvaluation(nowCalendar.time,3,1)
             dayEvalList.add(dayEval)
+            nowCalendar.add(Calendar.DAY_OF_MONTH,1)
         }
         calendar.setEvaluation(dayEvalList)
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
