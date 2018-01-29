@@ -11,8 +11,8 @@
         <attr name="mTextColorWeek" format="color" />            <!--星期字体颜色-->
         <attr name="mSelectWeekTextColor" format="color" />      <!--当前星期字体颜色-->
         <attr name="mTextColorDay" format="color" />             <!--日期字体颜色-->
-        <attr name="mTextColorSufFinish" format="color" />       <!--下标次数字体颜色-->
-        <attr name="mTextColorSufUnFinish" format="color" />
+        <attr name="mTextColorSufFormer" format="color" />       <!--下标次数字体颜色-->
+        <attr name="mTextColorSufLatter" format="color" />
         <attr name="mTextColorSufNull" format="color" />
 
         <attr name="mTextSizeMonth" format="dimension" />        <!--标题字体大小-->

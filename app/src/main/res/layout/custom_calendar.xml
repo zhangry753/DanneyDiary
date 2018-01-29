@@ -1,35 +1,38 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<cn.zry.danneydiary.CustomCalendar
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<cn.zry.danneydiary.widget.CustomCalendar xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:myView="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
 
+    myView:mBgMonth="#f0a1c1"
+    myView:mBgWeek="#f0a1c1"
+    myView:mBgDay="@color/aliceblue"
+    myView:mBgSuf="@color/azure"
+
+    myView:mCurrentBg="#6E6E6E"
+    myView:mCurrentBgDashPath="@array/customCalendar_currentDay_bg_DashPath"
+    myView:mCurrentBgStrokeWidth="1.5dip"
+    myView:mLineSpac="12dip"
     myView:mMonthRowL="@drawable/custom_calendar_row_left"
     myView:mMonthRowR="@drawable/custom_calendar_row_right"
     myView:mMonthRowSpac="88dip"
 
-    myView:mTextSizeMonth="20sp"
-    myView:mTextSizeWeek="17sp"
-    myView:mTextSizeDay="17sp"
-    myView:mTextSizeSuf="10sp"
+    myView:mMonthSpac="10dip"
+    myView:mSelectBg="#fe7f5c"
+    myView:mSelectRadius="15dip"
 
-    myView:mTextColorMonth="#4b4b4b"
-    myView:mTextColorWeek="#9e9e9d"
+    myView:mSelectTextColor="#ffffff"
     myView:mSelectWeekTextColor="#f67633"
     myView:mTextColorDay="#686768"
-    myView:mTextColorSufFinish="#fc7451"
-    myView:mTextColorSufUnFinish="#60ba8d"
+    myView:mTextColorMonth="@color/aliceblue"
+    myView:mTextColorSufFormer="#fc7451"
+    myView:mTextColorSufLatter="#60ba8d"
     myView:mTextColorSufNull="#cecdcd"
-    myView:mSelectTextColor="#ffffff"
-
-    myView:mMonthSpac="10dip"
-    myView:mLineSpac="12dip"
-    myView:mTextSpac="8dip"
-
-    myView:mCurrentBg="#6E6E6E"
-    myView:mCurrentBgStrokeWidth="1.5dip"
-    myView:mCurrentBgDashPath="@array/customCalendar_currentDay_bg_DashPath"
-    myView:mSelectBg="#fe7f5c"
-    myView:mSelectRadius="15dip" />
+    myView:mTextColorWeek="@color/azure"
+    myView:mTextSizeDay="17sp"
+    myView:mTextSizeMonth="20sp"
+    myView:mTextSizeSuf="10sp"
+    myView:mTextSizeWeek="17sp"
+    myView:mTextSpac="8dip" />

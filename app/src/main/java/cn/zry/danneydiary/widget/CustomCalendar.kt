@@ -1,4 +1,4 @@
-package cn.zry.danneydiary
+package cn.zry.danneydiary.widget
 
 import android.content.Context
 import android.graphics.BitmapFactory
@@ -9,14 +9,15 @@ import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.RectF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import cn.zry.danneydiary.R
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.HashMap
+
 
 /**
  * author : openXu
@@ -41,7 +42,7 @@ class CustomCalendar : View {
     private val mBgMonth: Int
     private val mBgWeek: Int
     private val mBgDay: Int
-    private val mBgPre: Int
+    private val mBgSuf: Int
     /**
      * 标题的颜色、大小
      */
@@ -66,8 +67,8 @@ class CustomCalendar : View {
     /**
      * 下标次数文本的颜色、大小
      */
-    private val mTextColorSufFinish: Int
-    private val mTextColorSufUnFinish: Int
+    private val mTextColorSufFormer: Int
+    private val mTextColorSufLatter: Int
     private val mTextColorSufNull: Int
     private val mTextSizeSuf: Float
     /**
@@ -97,14 +98,16 @@ class CustomCalendar : View {
     private var dateCellH: Float = 0.toFloat()    //每行高度
     private var dateCellW: Float = 0.toFloat()    //每列宽度
 
-    @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : super(context, attrs, defStyleAttr) {
+    @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0)
+            : super(context, attrs, defStyleAttr) {
         //获取自定义属性的值
-        val a = context.theme.obtainStyledAttributes(attrs, R.styleable.CustomCalendar, defStyleAttr, 0)
+        val a = context.theme.obtainStyledAttributes(
+                attrs, R.styleable.CustomCalendar, defStyleAttr, 0)
 
         mBgMonth = a.getColor(R.styleable.CustomCalendar_mBgMonth, Color.TRANSPARENT)
         mBgWeek = a.getColor(R.styleable.CustomCalendar_mBgWeek, Color.TRANSPARENT)
         mBgDay = a.getColor(R.styleable.CustomCalendar_mBgDay, Color.TRANSPARENT)
-        mBgPre = a.getColor(R.styleable.CustomCalendar_mBgSuf, Color.TRANSPARENT)
+        mBgSuf = a.getColor(R.styleable.CustomCalendar_mBgSuf, Color.TRANSPARENT)
 
         mToday = a.getResourceId(R.styleable.CustomCalendar_mToday, R.drawable.custom_calendar_today)
         mMonthRowL = a.getResourceId(R.styleable.CustomCalendar_mMonthRowL, R.drawable.custom_calendar_row_left)
@@ -119,14 +122,15 @@ class CustomCalendar : View {
         mTextSizeWeek = a.getDimension(R.styleable.CustomCalendar_mTextSizeWeek, 70f)
         mTextColorDay = a.getColor(R.styleable.CustomCalendar_mTextColorDay, Color.GRAY)
         mTextSizeDay = a.getDimension(R.styleable.CustomCalendar_mTextSizeDay, 70f)
-        mTextColorSufFinish = a.getColor(R.styleable.CustomCalendar_mTextColorSufFinish, Color.BLUE)
-        mTextColorSufUnFinish = a.getColor(R.styleable.CustomCalendar_mTextColorSufUnFinish, Color.BLUE)
+        mTextColorSufFormer = a.getColor(R.styleable.CustomCalendar_mTextColorSufFormer, Color.BLUE)
+        mTextColorSufLatter = a.getColor(R.styleable.CustomCalendar_mTextColorSufLatter, Color.BLUE)
         mTextColorSufNull = a.getColor(R.styleable.CustomCalendar_mTextColorSufNull, Color.BLUE)
         mTextSizeSuf = a.getDimension(R.styleable.CustomCalendar_mTextSizeSuf, 40f)
         mSelectTextColor = a.getColor(R.styleable.CustomCalendar_mSelectTextColor, Color.YELLOW)
         mCurrentBg = a.getColor(R.styleable.CustomCalendar_mCurrentBg, Color.GRAY)
         try {
-            val dashPathId = a.getResourceId(R.styleable.CustomCalendar_mCurrentBgDashPath, R.array.customCalendar_currentDay_bg_DashPath)
+            val dashPathId = a.getResourceId(R.styleable.CustomCalendar_mCurrentBgDashPath,
+                    R.array.customCalendar_currentDay_bg_DashPath)
             val array = resources.getIntArray(dashPathId)
             mCurrentBgDashPath = array.map { item -> item.toFloat() }.toFloatArray()
         } catch (e: Exception) {
@@ -171,7 +175,7 @@ class CustomCalendar : View {
         //日期高度
         mPaint.textSize = mTextSizeDay
         dayHeight = FontUtil.getFontHeight(mPaint)
-        //次数字体高度
+        //下标字体高度
         mPaint.textSize = mTextSizeSuf
         sufHeight = FontUtil.getFontHeight(mPaint)
         //每行高度 = 行间距 + 日期字体高度 + 字间距 + 次数字体高度
@@ -203,12 +207,8 @@ class CustomCalendar : View {
         val month = Calendar.getInstance()
         month.time = monthFormat.parse(monthStr)
         info_dayOfMonth = month.getActualMaximum(Calendar.DAY_OF_MONTH)
-        info_firstWeekIndex = (month.get(Calendar.DAY_OF_WEEK) - 2) % 7
+        info_firstWeekIndex = (month.get(Calendar.DAY_OF_WEEK) - 2 + 7) % 7
         info_lineNum = Math.ceil((info_dayOfMonth + info_firstWeekIndex).toDouble() / 7.0).toInt()
-
-        val info_lastLineNum = info_dayOfMonth - ((info_lineNum - 1) * 7 - info_firstWeekIndex)
-        Log.i(TAG, displayMonth + "一共有" + info_dayOfMonth + "天,第一天的索引是：" + info_firstWeekIndex + "   有" + info_lineNum +
-                "行，第一行" + (7 - info_firstWeekIndex) + "个，最后一行" + info_lastLineNum + "个")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -217,8 +217,6 @@ class CustomCalendar : View {
         dateCellW = widthSize.toFloat() / 7
         //高度 = 标题高度 + 星期高度 + 日期行数*每行高度
         val height = titleHeight + weekHeight + info_lineNum * dateCellH
-        Log.v(TAG, "标题高度：" + titleHeight + " 星期高度：" + weekHeight + " 每行高度：" + dateCellH +
-                " 行数：" + info_lineNum + "  \n控件高度：" + height)
         setMeasuredDimension(View.getDefaultSize(suggestedMinimumWidth, widthMeasureSpec),
                 height.toInt())
 
@@ -299,85 +297,81 @@ class CustomCalendar : View {
         val paintDate = Calendar.getInstance()
         paintDate.time = displayMonthDate
         var left = info_firstWeekIndex * dateCellW
-        var top = titleHeight + weekHeight
+        var top = titleHeight + weekHeight + mLineSpac
+        //获取笔粗细的偏移量
+        mPaint.textSize = mTextSizeDay
+        val dayTextLeading = FontUtil.getFontLeading(mPaint)
+        mPaint.textSize = mTextSizeSuf
+        val sufTextLeading = FontUtil.getFontLeading(mPaint)
         for (i in 1..info_dayOfMonth) {
             val dayStr = i.toString()
+            val dayBottom = top + dayHeight
+            val sufTop = dayBottom + mTextSpac
+            val sufBottom = sufTop + sufHeight
             //背景
-            val bottom = top + mLineSpac + dayHeight
-            bgPaint.color = mBgDay
-            var rect = RectF(0f, top, width.toFloat(), bottom)
-            canvas.drawRect(rect, bgPaint)
-            //获取笔粗细的偏移量
-            mPaint.textSize = mTextSizeDay
-            val dayTextLeading = FontUtil.getFontLeading(mPaint)
-            mPaint.textSize = mTextSizeSuf
-            val preTextLeading = FontUtil.getFontLeading(mPaint)
-            mPaint.textSize = mTextSizeDay
+            if (i==1 || left-0 <= 1e-5) {
+                bgPaint.color = mBgDay
+                var dayBgRect = RectF(0f, top, width.toFloat(), dayBottom + mTextSpac)
+                if (i==1)
+                    dayBgRect = RectF(0f, top-mLineSpac, width.toFloat(), dayBottom + mTextSpac)
+                canvas.drawRect(dayBgRect, bgPaint)
+                bgPaint.color = mBgSuf
+                val sufBgrect = RectF(0f, sufTop, width.toFloat(), sufBottom + mLineSpac)
+                canvas.drawRect(sufBgrect, bgPaint)
+            }
             //如果是当天日期
             if (paintDate.time.equals(currentDate.time)) {
-                mPaint.color = mTextColorDay
                 bgPaint.color = mCurrentBg
                 bgPaint.style = Paint.Style.STROKE  //空心
                 val effect = DashPathEffect(mCurrentBgDashPath, 1f)
                 bgPaint.pathEffect = effect   //设置画笔曲线间隔
                 bgPaint.strokeWidth = mCurrentBgStrokeWidth       //画笔宽度
                 //绘制空心圆背景
-                canvas.drawCircle((left + dateCellW / 2).toFloat(), top + mLineSpac + dayHeight / 2,
+                canvas.drawCircle((left + dateCellW / 2).toFloat(), top + dayHeight / 2,
                         mSelectRadius - mCurrentBgStrokeWidth, bgPaint)
+                //绘制完后将画笔还原，避免脏笔
+                bgPaint.pathEffect = null
+                bgPaint.strokeWidth = 0f
+                bgPaint.style = Paint.Style.FILL
             }
-            //绘制完后将画笔还原，避免脏笔
-            bgPaint.pathEffect = null
-            bgPaint.strokeWidth = 0f
-            bgPaint.style = Paint.Style.FILL
             //如果是选中的日期
             if (paintDate.time.equals(selectDate.time)) {
                 mPaint.color = mSelectTextColor
                 bgPaint.color = mSelectBg
                 //绘制橙色圆背景，参数一是中心点的x轴，参数二是中心点的y轴，参数三是半径，参数四是paint对象；
-                canvas.drawCircle((left + dateCellW / 2).toFloat(), top + mLineSpac + dayHeight / 2, mSelectRadius, bgPaint)
+                canvas.drawCircle((left + dateCellW / 2).toFloat(),
+                        top + dayHeight / 2,
+                        mSelectRadius, bgPaint)
             } else {
                 mPaint.color = mTextColorDay
             }
             //写日期
+            mPaint.textSize = mTextSizeDay
             var x = left + (dateCellW - mPaint.measureText(dayStr)) / 2
-            canvas.drawText(dayStr, x, top + mLineSpac + dayTextLeading, mPaint)
-//            //绘制日期标记
-//            mPaint.textSize = mTextSizeSuf
-//            val dayEval = dateDatamap[day]
-//            var preStr = "0/0"
-//            if (isCurrentMonth) {
-//                if (day > currentDay) {
-//                    mPaint.color = mTextColorSufNull
-//                } else if (dayEval != null) {
-//                    //区分完成未完成
-//                    if (dayEval.commendCount >= dayEval.criticiseCount) {
-//                        mPaint.color = mTextColorSufFinish
-//                    } else {
-//                        mPaint.color = mTextColorSufUnFinish
-//                    }
-//                    preStr = dayEval.commendCount.toString() + "/" + dayEval.criticiseCount
-//
-//                } else {
-//                    mPaint.color = mTextColorSufNull
-//                }
-//            } else {
-//                if (dayEval != null) {
-//                    //区分完成未完成
-//                    if (dayEval.commendCount >= dayEval.criticiseCount) {
-//                        mPaint.color = mTextColorSufFinish
-//                    } else {
-//                        mPaint.color = mTextColorSufUnFinish
-//                    }
-//                    preStr = dayEval.commendCount.toString() + "/" + dayEval.criticiseCount
-//
-//                } else {
-//                    mPaint.color = mTextColorSufNull
-//                }
-//            }
-//            len = FontUtil.getFontlength(mPaint, preStr).toInt()
-//            x = left + (dateCellW - len) / 2
-//            canvas.drawText(preStr, x.toFloat(), topPre + mTextSpac + preTextLeading, mPaint)
-
+            canvas.drawText(dayStr, x, top + dayTextLeading, mPaint)
+            //绘制日期下标
+            mPaint.textSize = mTextSizeSuf
+            val dayEval = dateDatamap[paintDate.timeInMillis]
+            if (dayEval != null) {
+                val sufStrLen = mPaint.measureText("${dayEval.commendCount}/${dayEval.criticizeCount}")
+                mPaint.color = mTextColorSufFormer
+                x = left + (dateCellW - sufStrLen) / 2
+                canvas.drawText(dayEval.commendCount.toString(),
+                        x, sufTop + sufTextLeading, mPaint)
+                mPaint.color = mTextColorSufNull
+                x += mPaint.measureText(dayEval.commendCount.toString())
+                canvas.drawText("/",
+                        x, sufTop + sufTextLeading, mPaint)
+                mPaint.color = mTextColorSufLatter
+                x += mPaint.measureText("/")
+                canvas.drawText(dayEval.criticizeCount.toString(),
+                        x, sufTop + sufTextLeading, mPaint)
+            } else {
+                mPaint.color = mTextColorSufNull
+                val sufStr = "0/0"
+                x = left + (dateCellW - mPaint.measureText(sufStr)) / 2
+                canvas.drawText(sufStr, x, sufTop + sufTextLeading, mPaint)
+            }
             // 循环下一个日期
             paintDate.add(Calendar.DAY_OF_MONTH, 1)
             left += dateCellW
@@ -425,7 +419,6 @@ class CustomCalendar : View {
      * 处理点击事件
      */
     fun touchHandle(point: PointF) {
-        Log.e(TAG, "点击坐标：(" + point.x + " ，" + point.y + ")")
         if (point.y <= titleHeight) {
             //事件在标题上
             if (point.x >= rowLStart && point.x < rowLStart + rowWidth) {
@@ -447,9 +440,11 @@ class CustomCalendar : View {
             listener.onWeekClick(xIndex, WEEK_STR[xIndex])
         } else {
             //事件在日期部分
-            val rowIndex: Int = Math.floor(((point.y - titleHeight - weekHeight) / dateCellH).toDouble()).toInt()
-            val colNo: Int = Math.floor((point.x / dateCellW).toDouble()).toInt()
-            val selectDayInt = rowIndex * 7 - info_firstWeekIndex + colNo + 1
+            val rowIndex: Int = Math.floor(((
+                    point.y - titleHeight - weekHeight) / dateCellH
+                    ).toDouble()).toInt()
+            val colIndex: Int = Math.floor((point.x / dateCellW).toDouble()).toInt()
+            val selectDayInt = rowIndex * 7 - info_firstWeekIndex + colIndex + 1
             if (selectDayInt > 0 && selectDayInt <= info_dayOfMonth) {
                 val selectDateStr = "${displayMonth}${selectDayInt}日"
                 listener.onDayClick(selectDayInt - 1, selectDateStr, null)
@@ -473,7 +468,9 @@ class CustomCalendar : View {
         if (list != null && list.size > 0) {
             dateDatamap.clear()
             for (dayEval in list) {
-                dateDatamap.put(dayEval.date.time, dayEval)
+                var dayDate = dayEval.date
+                dayDate = dateFormat.parse(dateFormat.format(dayDate))
+                dateDatamap.put(dayDate.time, dayEval)
             }
         }
         invalidate()
@@ -554,7 +551,7 @@ class CustomCalendar : View {
         }
     }
 
-    class DayEvaluation(var date: Date, var commendCount: Int, var criticiseCount: Int)
+    class DayEvaluation(var date: Date, var commendCount: Int, var criticizeCount: Int)
 
 
     /***********************接口API↑↑↑↑↑↑↑ */
