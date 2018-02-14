@@ -10,20 +10,21 @@ import java.util.*
 @Entity(tableName = "Note")
 @TypeConverters(RoomConverters::class)
 data class NoteEntity(
-        @PrimaryKey @ColumnInfo(name = "id") var id: Long
-) {
-    @Ignore constructor():this(0)
+    @PrimaryKey @ColumnInfo(name = "id") var id: Long? = null,
 
     @ColumnInfo(name = "date")
-    var date: Date = Date()
+    var date: Date = Date(),
 
     @ColumnInfo(name = "title")
-    var title: String = ""
+    var title: String = "",
 
     @ColumnInfo(name = "content")
-    var content: String = ""
+    var content: String = "",
 
     @ColumnInfo(name = "imageId")
-    var imageId: Int = 0
+    var imageId: Int = 0,
 
-}
+    @ColumnInfo(name = "isCommend")
+    var isCommend: Boolean = true
+
+)

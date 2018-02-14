@@ -17,7 +17,7 @@
             android:id="@+id/calendar"/>
 
         <ListView
-            android:id="@+id/noteRecyclerView"
+            android:id="@+id/noteListView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_margin="10dp"

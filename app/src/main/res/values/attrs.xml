@@ -36,4 +36,13 @@
         <attr name="mLineSpac" format="dimension" />             <!--日期行间距-->
         <attr name="mTextSpac" format="dimension" />             <!--日期和下标次数字体上下间距-->
     </declare-styleable>
+
+    <!-- Declare custom theme attributes that allow changing which styles are
+         used for button bars depending on the API level.
+         ?android:attr/buttonBarStyle is new as of API 11 so this is
+         necessary to support previous API levels. -->
+    <declare-styleable name="ButtonBarContainerTheme">
+        <attr name="metaButtonBarStyle" format="reference" />
+        <attr name="metaButtonBarButtonStyle" format="reference" />
+    </declare-styleable>
 </resources>

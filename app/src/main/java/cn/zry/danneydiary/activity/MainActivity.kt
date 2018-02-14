@@ -1,37 +1,42 @@
 package cn.zry.danneydiary.activity
 
-import android.arch.core.internal.SafeIterableMap
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
+import android.os.Environment
 import android.support.design.widget.Snackbar
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.ListAdapter
-import android.widget.ListView
-import android.widget.SimpleAdapter
-import android.widget.Toast
+import android.view.*
+import android.widget.*
 import cn.zry.danneydiary.MyApplication
 import cn.zry.danneydiary.widget.CustomCalendar
 import cn.zry.danneydiary.R
+import cn.zry.danneydiary.adapter.NoteAdapter
 import cn.zry.danneydiary.dao.NoteDao
 import cn.zry.danneydiary.model.NoteEntity
+import cn.zry.danneydiary.utils.DateUtils
+import cn.zry.danneydiary.utils.FileUtils
+import cn.zry.danneydiary.utils.PermissionUtils
+import com.google.gson.Gson
 import io.reactivex.Observable
-import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 
 import kotlinx.android.synthetic.main.activity_main.*
 import kotterknife.bindView
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 import kotlin.collections.ArrayList
-import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
-    private val noteRecyclerView: ListView by bindView(R.id.noteRecyclerView)
+    private val noteListView: ListView by bindView(R.id.noteListView)
     private val calendar: CustomCalendar by bindView(R.id.calendar)
 
     private lateinit var noteDao: NoteDao
+    val noteList = ArrayList<NoteEntity>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,71 +44,137 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", { view ->
-                        Toast.makeText(this, "点击了", Toast.LENGTH_SHORT).show()
-                    }).show()
+            val intent = Intent(this, EditActivity::class.java)
+            intent.putExtra("data", Gson().toJson(NoteEntity(date = Date())))
+            startActivityForResult(intent, 1)
         }
 
         noteDao = (application as MyApplication).db.noteDao()
 
-//        val note = NoteEntity()
-//        note.title = "title"
-//        Observable.create(ObservableOnSubscribe<Long> { e ->
-//            val id = noteDao.insert(note)
-//            if (id.size > 0)
-//                e.onNext(id[0])
-//        }).observeOn(Schedulers.newThread())
-//                .subscribeOn(Schedulers.newThread())
-//                .subscribe({ value ->
-//                    System.out.println(value)
-//                })
+        // note列表
+        val popupWindowView = this.layoutInflater.inflate(R.layout.popup_window, null)
+        val popupWindow = PopupWindow(popupWindowView,
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          true)
+        popupWindow.setAnimationStyle(R.style.popupAnimation);
+        val deleteBtn = popupWindowView.findViewById<Button>(R.id.popup_confirmBtn)
+        val cancelBtn = popupWindowView.findViewById<Button>(R.id.popup_cancelBtn)
+        cancelBtn.setOnClickListener { view -> popupWindow.dismiss() }
+        // note列表点击事件
+        val noteClickListener = object : NoteAdapter.ClickListener {
+            // 点击打开编辑
+            override fun onClick(view: View, note: NoteEntity) {
+                val intent = Intent(this@MainActivity, EditActivity::class.java)
+                intent.putExtra("data", Gson().toJson(note))
+                this@MainActivity.startActivityForResult(intent, 1)
+            }
 
+            // 长按删除
+            override fun onLongClick(view: View, note: NoteEntity) {
+                deleteBtn.setOnClickListener { view ->
+                    Observable.create(ObservableOnSubscribe<Unit> { e ->
+                        noteDao.delete(note)
+                        e.onNext(Unit)
+                    }).subscribeOn(Schedulers.newThread())
+                      .observeOn(AndroidSchedulers.mainThread())
+                      .subscribe({ value ->
+                          Toast.makeText(this@MainActivity, "删除成功", Toast.LENGTH_SHORT).show()
+                          calendar.refresh()
+                      })
+                    popupWindow.dismiss()
+                }
+                popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0)
+            }
+        }
+        this.noteListView.adapter = NoteAdapter(this, noteList, noteClickListener)
+
+        // 日历响应事件
+        this.calendar.setOnClickListener(object : CustomCalendar.simpleOnClickListener(calendar) {
+            // 日期点击事件
+            override fun onDayClick(dayIndex: Int, dayStr: String, dayEval: CustomCalendar.DayEvaluation?) {
+                super.onDayClick(dayIndex, dayStr, dayEval)
+                noteList.clear()
+                Observable.create(ObservableOnSubscribe<Unit> { e ->
+                    noteList.addAll(noteDao.getByDay(dayStr))
+                    e.onNext(Unit)
+                }).subscribeOn(Schedulers.newThread())
+                  .observeOn(AndroidSchedulers.mainThread()).subscribe({
+                    (noteListView.adapter as NoteAdapter).notifyDataSetChanged()
+                })
+            }
+
+            // 加载每月中的数据
+            override fun loadData(monthStr: String) {
+                super.loadData(monthStr)
+                Observable.create(ObservableOnSubscribe<Map<Long, CustomCalendar.DayEvaluation>> { e ->
+                    val noteList = noteDao.getByDay(monthStr)
+                    val dateDataMap = noteList.groupBy { it ->
+                        DateUtils.date2Date(it.date).time
+                    }.mapValues { entry ->
+                        CustomCalendar.DayEvaluation(
+                          Date(entry.key),
+                          entry.value.filter { it.isCommend }.count(),
+                          entry.value.filter { !it.isCommend }.count()
+                        )
+                    }
+                    e.onNext(dateDataMap)
+                }).subscribeOn(Schedulers.newThread())
+                  .observeOn(AndroidSchedulers.mainThread()).subscribe { data ->
+                    calendar.setEvaluation(data)
+                }
+            }
+        })
+        this.calendar.initData()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // 加载note
-        val noteList = ArrayList<Map<String, Any>>()
-        for (i in 0..10) {
-            val note = hashMapOf<String, Any>(
-                    "img" to R.drawable.rabbit,
-                    "title" to "Lalala",
-                    "content" to "内容啊啊啊啊啊奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥奥多付所付所多")
-            noteList.add(note)
-        }
 
-        val noteAdapter = SimpleAdapter(
-                this, noteList, R.layout.note_item,
-                arrayOf("img", "title", "content"),
-                intArrayOf(R.id.noteImg, R.id.noteTitle, R.id.noteContent)
-        )
-        noteRecyclerView.adapter = noteAdapter
-        // 日历内容 & 响应事件
-        val dayEvalList = ArrayList<CustomCalendar.DayEvaluation>()
-        val nowCalendar = Calendar.getInstance()
-        val monthFormat = SimpleDateFormat("yyyy-MM")
-        nowCalendar.time = monthFormat.parse(monthFormat.format(Date()))
-        for (i in 1..20) {
-            val dayEval = CustomCalendar.DayEvaluation(nowCalendar.time, 3, 1)
-            dayEvalList.add(dayEval)
-            nowCalendar.add(Calendar.DAY_OF_MONTH, 1)
-        }
-//        calendar.setEvaluation(dayEvalList)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        calendar.refresh()
     }
 
+    /***
+     * 右上角的菜单
+     */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_backup -> {
+                if(!PermissionUtils.externalStorage(this))
+                    return true
+                val fileCount = FileUtils.copy(
+                  getDatabasePath("danneyDiary").path,
+                  Environment.getExternalStorageDirectory().path + "/danneyDiary"
+                )
+                if (fileCount > 0)
+                    Toast.makeText(this, "备份成功", Toast.LENGTH_SHORT).show()
+                else
+                    Toast.makeText(this, "备份失败", Toast.LENGTH_SHORT).show()
+                return true
+            }
+            R.id.action_restore -> {
+                AlertDialog.Builder(this)
+                  .setMessage("确认还原数据么？")
+                  .setPositiveButton("取消", null)
+                  .setNegativeButton("确认", { dialog, which ->
+                      if(!PermissionUtils.externalStorage(this))
+                          return@setNegativeButton
+                      val fileCount = FileUtils.copy(
+                        Environment.getExternalStorageDirectory().path + "/danneyDiary",
+                        getDatabasePath("danneyDiary").path
+                      )
+                      if (fileCount > 0)
+                          Toast.makeText(this, "还原成功", Toast.LENGTH_SHORT).show()
+                      else
+                          Toast.makeText(this, "还原失败", Toast.LENGTH_SHORT).show()
+                      calendar.refresh()
+                  }).show()
+                return true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

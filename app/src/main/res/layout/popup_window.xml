@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#b5555555" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="12dip"
+        android:paddingLeft="10dip"
+        android:paddingRight="10dip"
+        android:orientation="vertical" >
+        <Button
+            android:id="@+id/popup_confirmBtn"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@color/red"
+            android:textColor="@color/whitesmoke"
+            android:text="删除"/>
+
+        <Button
+            android:id="@+id/popup_cancelBtn"
+            android:layout_marginTop="12dip"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="取消" />
+    </LinearLayout>
+
+</RelativeLayout>

@@ -12,6 +12,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import cn.zry.danneydiary.R
+import cn.zry.danneydiary.utils.DateUtils
 
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -32,8 +33,6 @@ import java.util.HashMap
  */
 class CustomCalendar : View {
 
-    private val dateFormat = SimpleDateFormat("yyyy年MM月dd日")
-    private val monthFormat = SimpleDateFormat("yyyy年MM月")
     private val TAG = "CustomCalendar"
 
     /**
@@ -149,10 +148,10 @@ class CustomCalendar : View {
 
         //默认显示当前月份
         currentDate = Calendar.getInstance()
-        currentDate.time = (dateFormat.parse(dateFormat.format(Date())))
+        currentDate.time = (DateUtils.date2Date(Date()))
         selectDate = Calendar.getInstance()
         selectDate.time = currentDate.time
-        setMonth(monthFormat.format(Date()))
+        setMonth(DateUtils.date2MonthStr(currentDate.time),true)
     }
 
     /**
@@ -199,16 +198,18 @@ class CustomCalendar : View {
     /**
      * 设置年和月份(翻页)，计算日期信息
      */
-    private fun setMonth(monthStr: String) {
+    private fun setMonth(monthStr: String, isInitial:Boolean=false) {
         if (displayMonth.equals(monthStr)) return
         this.displayMonth = monthStr
-        this.displayMonthDate = monthFormat.parse(displayMonth)
+        this.displayMonthDate = DateUtils.str2Month(displayMonth)
         // 计算日期信息
         val month = Calendar.getInstance()
-        month.time = monthFormat.parse(monthStr)
+        month.time = DateUtils.str2Month(monthStr)
         info_dayOfMonth = month.getActualMaximum(Calendar.DAY_OF_MONTH)
         info_firstWeekIndex = (month.get(Calendar.DAY_OF_WEEK) - 2 + 7) % 7
         info_lineNum = Math.ceil((info_dayOfMonth + info_firstWeekIndex).toDouble() / 7.0).toInt()
+        // 重载数据, 初始化时不加载数据(因此时listener未初始化)
+        if(!isInitial)listener.loadData(monthStr)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -277,7 +278,7 @@ class CustomCalendar : View {
         canvas.drawRect(rect, bgPaint)
         //绘制星期：七天
         mPaint.textSize = mTextSizeWeek
-        val selectMonth = dateFormat.format(selectDate.time)
+        val selectMonth = DateUtils.date2Str(selectDate.time)
         val selectWeekIndex = (selectDate.get(Calendar.DAY_OF_WEEK) - 2) % 7
         for (i in WEEK_STR.indices) {
             if (selectMonth.equals(displayMonth) && selectWeekIndex == i) {
@@ -462,18 +463,36 @@ class CustomCalendar : View {
     /***********************接口API↓↓↓↓↓↓↓ */
     private var dateDatamap: MutableMap<Long, DayEvaluation> = HashMap()
 
-    private var listener: onClickListener = simpleOnClickListener()
+    private var listener: onClickListener = simpleOnClickListener(this)
 
-    fun setEvaluation(list: List<DayEvaluation>?) {
-        if (list != null && list.size > 0) {
-            dateDatamap.clear()
-            for (dayEval in list) {
-                var dayDate = dayEval.date
-                dayDate = dateFormat.parse(dateFormat.format(dayDate))
-                dateDatamap.put(dayDate.time, dayEval)
-            }
-        }
+    fun initData(){
+        listener.loadData(displayMonth)
+        listener.onDayClick(
+          currentDate.get(Calendar.DAY_OF_MONTH),
+          DateUtils.date2Str(currentDate.time),
+          dateDatamap[currentDate.timeInMillis]
+        )
+    }
+    fun setEvaluation(map: Map<Long, DayEvaluation>) {
+        dateDatamap.clear()
+        dateDatamap.putAll(map)
         invalidate()
+    }
+    fun refresh(){
+        listener.loadData(displayMonth)
+        listener.onDayClick(
+          selectDate.get(Calendar.DAY_OF_MONTH),
+          DateUtils.date2Str(selectDate.time),
+          dateDatamap[selectDate.timeInMillis]
+        )
+        invalidate()
+    }
+
+    /**
+     * 更新当前日期
+     */
+    fun updateCurrentDate(){
+        currentDate.time = DateUtils.date2Date(Date())
     }
 
     /**
@@ -484,23 +503,23 @@ class CustomCalendar : View {
         val monthCalendar = Calendar.getInstance()
         monthCalendar.time = displayMonthDate
         monthCalendar.add(Calendar.MONTH, amount)
-        setMonth(monthFormat.format(monthCalendar.time))
+        setMonth(DateUtils.date2MonthStr(monthCalendar.time))
     }
 
-    fun changeMonth(dateStr: String) = changeMonth(dateFormat.parse(dateStr))
+    fun changeMonth(dateStr: String) = changeMonth(DateUtils.str2Date(dateStr))
 
     fun changeMonth(date: Date) {
-        setMonth(monthFormat.format(date))
+        setMonth(DateUtils.date2MonthStr(date))
     }
 
     /**
      * 选择日期
      */
-    fun changeSelectDate(date: Date) = changeSelectDate(dateFormat.format(date))
+    fun changeSelectDate(date: Date) = changeSelectDate(DateUtils.date2Str(date))
 
     fun changeSelectDate(dateStr: String) {
         changeMonth(dateStr)
-        selectDate.time = dateFormat.parse(dateStr)
+        selectDate.time = DateUtils.str2Date(dateStr)
     }
 
     fun setOnClickListener(listener: onClickListener) {
@@ -508,6 +527,8 @@ class CustomCalendar : View {
     }
 
     interface onClickListener {
+
+        fun loadData(monthStr: String)
 
         fun onLeftRowClick()
 
@@ -522,23 +543,28 @@ class CustomCalendar : View {
         fun onDayClick(dayIndex: Int, dayStr: String, dayEval: DayEvaluation?)
     }
 
-    internal inner class simpleOnClickListener : onClickListener {
+    public open class simpleOnClickListener(val calendar: CustomCalendar) : onClickListener {
+
+        override fun loadData(monthStr: String) {}
 
         override fun onLeftRowClick() {
-            changeMonth(-1)
-            invalidate()
+            calendar.changeMonth(-1)
+            calendar.invalidate()
         }
 
         override fun onRightRowClick() {
-            changeMonth(1)
-            invalidate()
+            calendar.changeMonth(1)
+            calendar.invalidate()
         }
 
         override fun onTodayClick() {
-            // 重新获取当前时间
-            currentDate.time = dateFormat.parse(dateFormat.format(Date()))
-            changeSelectDate(currentDate.time)
-            invalidate()
+            calendar.updateCurrentDate()
+            onDayClick(
+              calendar.currentDate.get(Calendar.DAY_OF_MONTH),
+              DateUtils.date2Str(calendar.currentDate.time),
+              calendar.dateDatamap[calendar.currentDate.timeInMillis]
+            )
+            calendar.invalidate()
         }
 
         override fun onTitleClick(titleStr: String, month: Date) {}
@@ -546,8 +572,8 @@ class CustomCalendar : View {
         override fun onWeekClick(weekIndex: Int, weekStr: String) {}
 
         override fun onDayClick(dayIndex: Int, dayStr: String, dayEval: DayEvaluation?) {
-            changeSelectDate(dayStr)
-            invalidate()
+            calendar.changeSelectDate(dayStr)
+            calendar.invalidate()
         }
     }
 

@@ -8,7 +8,7 @@ import cn.zry.danneydiary.model.NoteEntity
 /**
  * Created by zry on 2018/1/28.
  */
-@Database(entities = arrayOf(NoteEntity::class), version = 2)
+@Database(entities = arrayOf(NoteEntity::class), version = 1)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun noteDao(): NoteDao
 }

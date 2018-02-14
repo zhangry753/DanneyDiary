@@ -28,11 +28,11 @@ class RoomConverters {
 
     @TypeConverter
     open fun StringToDate(value: String): Date? {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(value)
+        return SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss").parse(value)
 
     }
     @TypeConverter
     open fun DateToString(value: Date): String? {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value)
+        return SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss").format(value)
     }
 }

@@ -149,4 +149,6 @@
     <color name="colorPrimary">#FF4081</color>
     <color name="colorPrimaryDark">#db366e</color>
     <color name="colorAccent">#FF4081</color>
+
+    <color name="black_overlay">#66000000</color>
 </resources>
